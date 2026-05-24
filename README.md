@@ -33,10 +33,10 @@ En Mac/Linux: open index.html
 
 ## Estructura del proyecto
 investigacion-demo-isw521/
-├── index.html        # Página principal de la demo
-├── style.css         # Estilos de la interfaz
-├── vitals.js         # Lógica de medición con PerformanceObserver
-└── README.md         # Este archivo
+1- index.html > Página principal de la demo 
+2- style.css > Estilos de la interfaz
+3- vitals.js > Lógica de medición con PerformanceObserver
+4- README.md
 
 ## Temas demostrados
 - Medición de LCP con PerformanceObserver
