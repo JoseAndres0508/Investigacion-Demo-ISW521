@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core Web Vitals — Demo ISW-521</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ========================================================
+       ENCABEZADO
+  ======================================================== -->
+  <header class="site-header">
+    <h1>Core Web Vitals <span class="subtitle">Demo técnica · ISW-521</span></h1>
+    <p class="intro">
+      Esta página mide en tiempo real las tres métricas principales de
+      rendimiento web usando <strong>PerformanceObserver</strong> nativo del navegador,
+      sin ninguna librería externa.
+    </p>
+  </header>
+
+  <!-- ========================================================
+       PANEL DE MÉTRICAS (se actualiza en tiempo real)
+  ======================================================== -->
+  <section class="metrics-panel" aria-label="Panel de métricas en vivo">
+    <h2>Métricas en vivo</h2>
+
+    <!-- LCP -->
+    <div class="metric-card" id="card-lcp">
+      <div class="metric-header">
+        <span class="metric-acronym">LCP</span>
+        <span class="metric-name">Largest Contentful Paint</span>
+      </div>
+      <div class="metric-value" id="lcp-value">—</div>
+      <div class="metric-status" id="lcp-status">Esperando…</div>
+      <div class="metric-thresholds">
+        <span class="good">Bueno &lt; 2.5s</span>
+        <span class="needs-work">Mejora 2.5–4s</span>
+        <span class="bad">Malo &gt; 4s</span>
+      </div>
+      <div class="metric-detail" id="lcp-element">Elemento: —</div>
+    </div>
+
+    <!-- INP -->
+    <div class="metric-card" id="card-inp">
+      <div class="metric-header">
+        <span class="metric-acronym">INP</span>
+        <span class="metric-name">Interaction to Next Paint</span>
+      </div>
+      <div class="metric-value" id="inp-value">—</div>
+      <div class="metric-status" id="inp-status">Interactúa con la página</div>
+      <div class="metric-thresholds">
+        <span class="good">Bueno &lt; 200ms</span>
+        <span class="needs-work">Mejora 200–500ms</span>
+        <span class="bad">Malo &gt; 500ms</span>
+      </div>
+      <div class="metric-detail" id="inp-count">Interacciones registradas: 0</div>
+    </div>
+
+    <!-- CLS -->
+    <div class="metric-card" id="card-cls">
+      <div class="metric-header">
+        <span class="metric-acronym">CLS</span>
+        <span class="metric-name">Cumulative Layout Shift</span>
+      </div>
+      <div class="metric-value" id="cls-value">0.000</div>
+      <div class="metric-status" id="cls-status">Monitoreando…</div>
+      <div class="metric-thresholds">
+        <span class="good">Bueno &lt; 0.1</span>
+        <span class="needs-work">Mejora 0.1–0.25</span>
+        <span class="bad">Malo &gt; 0.25</span>
+      </div>
+      <div class="metric-detail" id="cls-shifts">Desplazamientos detectados: 0</div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       ELEMENTO GRANDE PARA PROVOCAR LCP MEDIBLE
+  ======================================================== -->
+  <section class="lcp-section">
+    <h2>Elemento LCP principal</h2>
+    <p>
+      La imagen de abajo es el elemento más grande de la página y dispara el LCP.
+      Cuando termine de cargar, verás el tiempo registrado en el panel de arriba.
+    </p>
+
+    <!--
+      MODO CLS MALO  → sin width/height → cuando carga desplaza el texto
+      MODO CLS BUENO → con width/height → espacio reservado, sin desplazamiento
+    -->
+    <div class="lcp-image-wrapper" id="lcp-image-wrapper">
+      <img
+        id="lcp-img"
+        src="https://picsum.photos/seed/cwv-demo/900/400"
+        alt="Imagen principal de demostración LCP"
+        width="900"
+        height="400"
+        loading="eager"
+      />
+    </div>
+    <p class="lcp-note" id="lcp-note">
+      ✅ La imagen tiene <code>width</code> y <code>height</code> definidos →
+      el navegador reserva espacio antes de que cargue (sin CLS).
+    </p>
+  </section>
+
+  <!-- ========================================================
+       SECCIÓN INP — BOTONES PARA GENERAR INTERACCIONES
+  ======================================================== -->
+  <section class="inp-section">
+    <h2>Generador de interacciones (INP)</h2>
+    <p>
+      INP mide la peor latencia de <em>todas</em> las interacciones de la sesión.
+      Cada botón bloquea el hilo principal durante un tiempo diferente.
+    </p>
+
+    <div class="inp-buttons">
+      <button class="btn btn-fast" onclick="simularTrabajo(50)">
+        Trabajo rápido <span class="btn-hint">~50 ms</span>
+      </button>
+      <button class="btn btn-medium" onclick="simularTrabajo(200)">
+        Trabajo medio <span class="btn-hint">~200 ms</span>
+      </button>
+      <button class="btn btn-slow" onclick="simularTrabajo(600)">
+        Trabajo lento <span class="btn-hint">~600 ms</span>
+      </button>
+    </div>
+
+    <div class="inp-log" id="inp-log">
+      <p class="log-placeholder">Las interacciones aparecerán aquí…</p>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       SECCIÓN CLS — DEMO MALO VS CORREGIDO
+  ======================================================== -->
+  <section class="cls-section">
+    <h2>Demo de CLS: malo vs corregido</h2>
+    <p>
+      Observa cómo el score de CLS sube cuando insertamos contenido inesperado
+      que empuja el texto hacia abajo.
+    </p>
+
+    <div class="cls-controls">
+      <button class="btn btn-danger" id="btn-cls-malo" onclick="demoCLSMalo()">
+        ⚠️ Provocar CLS alto
+      </button>
+      <button class="btn btn-success" id="btn-cls-bueno" onclick="demoCLSBueno()">
+        ✅ Mostrar CLS corregido
+      </button>
+      <button class="btn btn-reset" onclick="resetCLS()">
+        🔄 Resetear demo
+      </button>
+    </div>
+
+    <div class="cls-demo-area" id="cls-demo-area">
+      <p id="cls-texto-contenido">
+        Este texto representa el contenido de la página. En el modo "CLS alto",
+        un banner aparecerá <em>encima</em> de este texto después de 2 segundos,
+        empujándolo hacia abajo y sumando al score de CLS.
+      </p>
+    </div>
+
+    <div class="cls-explanation" id="cls-explanation">
+      Presiona un botón para iniciar la demo.
+    </div>
+  </section>
+
+  <!-- ========================================================
+       MODIFICACIONES EN VIVO (para el docente)
+  ======================================================== -->
+  <section class="live-mod-section">
+    <h2>🔧 Modificaciones en vivo</h2>
+    <p>Usa estos controles durante la presentación para responder preguntas del docente:</p>
+
+    <div class="live-controls">
+      <label>
+        Umbral LCP "bueno" (ms):
+        <input type="number" id="input-lcp-umbral" value="2500" min="500" max="10000" step="100"
+               onchange="actualizarUmbralLCP(this.value)" />
+      </label>
+
+      <label>
+        Delay del banner CLS (ms):
+        <input type="number" id="input-cls-delay" value="2000" min="500" max="5000" step="500" />
+      </label>
+
+      <button class="btn btn-info" onclick="mostrarElementoLCP()">
+        Mostrar elemento LCP en consola
+      </button>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>ISW-521 · Programación en Ambiente Web I · UTN Sede San Carlos · 2026</p>
+    <p>Demo con <strong>PerformanceObserver</strong> nativo — sin librerías externas.</p>
+  </footer>
+
+  <script src="vitals.js"></script>
+</body>
+</html>
